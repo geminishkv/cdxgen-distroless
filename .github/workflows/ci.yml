@@ -1,0 +1,38 @@
+# CI: гейт линтеров (pre-commit, те же хуки и пины, что локально) и пайплайн безопасности (security.yml).
+name: ci
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  lint:
+    name: lint
+    # pre-commit run --all-files: gitleaks пропущен (хук смотрит только staged, историю проверяет job gitleaks в security.yml)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.12"
+      - run: python3 -m pip install --quiet pre-commit==4.7.0
+      - run: pre-commit run --all-files --show-diff-on-failure
+        env:
+          SKIP: gitleaks
+          GH_TOKEN: ${{ github.token }}  # zizmor: онлайн-аудиты пинов actions; токен только на чтение
+      - run: python3 -m unittest discover -s tests
+  security:
+    uses: ./.github/workflows/security.yml  # zizmor: ignore[self-repository] actionlint 1.7.12 синтаксис $/ не принимает
+    permissions:
+      contents: read
+      pull-requests: write  # только job report в security.yml: один обновляемый комментарий бота в PR

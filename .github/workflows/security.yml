@@ -1,0 +1,211 @@
+# Пайплайн безопасности образа: один сканер — один job, логика в scripts/security/*.py (запускается и с ноутбука).
+# Образ собирается один раз (linux/amd64) и передаётся сканерам артефактом; гейт — report.py gate по результатам слоёв;
+# сводка — report.py render в GITHUB_STEP_SUMMARY и один комментарий бота в PR. Ворота без секретов и write-прав.
+name: security
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+env:
+  SECURITY_OUT: ${{ github.workspace }}/.local/security/reports
+jobs:
+  build:
+    name: build
+    # Сборка для сканеров: тот же Dockerfile, что в релизе, одна платформа, в реестр не публикуется
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      # Образ сборщика закреплён по digest: sha на uses: его не пинит, по умолчанию это плавающий тег
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4.0.0
+        with:
+          driver-opts: image=moby/buildkit:v0.34.2@sha256:c5f8862f52499773af85bc07695b2379ef08e8002352b0df2c4864c91d78dabe
+      - uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294  # v7.0.0
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: cdxgen-distroless:ci
+          build-args: |
+            REVISION=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - run: docker save cdxgen-distroless:ci -o image.tar
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: image
+          path: image.tar
+          retention-days: 1
+          if-no-files-found: error
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - run: python3 scripts/security/install.py gitleaks
+      - run: python3 scripts/security/gitleaks.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: security-gitleaks
+          path: .local/security/reports/gitleaks.json
+          include-hidden-files: true
+          if-no-files-found: error
+  hadolint:
+    name: hadolint
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python3 scripts/security/install.py hadolint
+      - run: python3 scripts/security/hadolint.py Dockerfile
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: security-hadolint
+          path: .local/security/reports/hadolint.json
+          include-hidden-files: true
+          if-no-files-found: error
+  trivy-config:
+    name: trivy-config
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python3 scripts/security/install.py trivy
+      - run: python3 scripts/security/trivy_config.py Dockerfile
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: security-trivy-config
+          path: .local/security/reports/trivy-config.json
+          include-hidden-files: true
+          if-no-files-found: error
+  trivy-image:
+    name: trivy-image
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: image
+      - run: python3 scripts/security/install.py trivy
+      - run: python3 scripts/security/trivy_image.py docker-archive:image.tar
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: security-trivy-image
+          path: |
+            .local/security/reports/trivy-image.json
+            .local/security/reports/trivy-image.raw.json
+          include-hidden-files: true
+          if-no-files-found: error
+  sbom:
+    name: sbom
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: image
+      - run: docker load -i image.tar
+      - run: python3 scripts/security/install.py syft
+      - run: python3 scripts/security/sbom.py cdxgen-distroless:ci
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: security-sbom
+          path: |
+            .local/security/reports/sbom.json
+            .local/security/reports/sbom-image.cdx.json
+            .local/security/reports/sbom-cdxgen.cdx.json
+          include-hidden-files: true
+          if-no-files-found: error
+  # dependency-check:
+  #   # OWASP Dependency-Check по package-lock.json — ждёт ключа NVD (секрет NVD_API_KEY) и кэша базы по дате;
+  #   # без ключа база качается десятками минут и упирается в лимиты NVD. Включается отдельной задачей.
+  #   runs-on: ubuntu-24.04
+  #   permissions:
+  #     contents: read
+  #   timeout-minutes: 45
+  #   steps:
+  #     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+  #       with:
+  #         persist-credentials: false
+  #     - run: python3 scripts/security/install.py dependency-check
+  #     - run: python3 scripts/security/dependency_check.py package-lock.json
+  #       env:
+  #         NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+  gate:
+    name: gate
+    # Вердикт по гейтящим слоям: красный, если любой из них не success (отменён или пропущен — тоже)
+    needs: [gitleaks, hadolint, trivy-config, trivy-image]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python3 scripts/security/report.py gate --results "$RESULTS"
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+  report:
+    name: report
+    # Единственный пишущий job: сводка в GITHUB_STEP_SUMMARY и один обновляемый комментарий в PR
+    needs: [gitleaks, hadolint, trivy-config, trivy-image, sbom]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write  # комментарий бота в PR (upsert по маркеру), единственное write-право пайплайна
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          pattern: security-*
+          path: .local/security/reports
+          merge-multiple: true
+      - run: python3 scripts/security/report.py render --results "$RESULTS" --pr-comment "$PR_COMMENT"
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          PR_COMMENT: ${{ github.event_name == 'pull_request' }}
+          GITHUB_TOKEN: ${{ github.token }}
