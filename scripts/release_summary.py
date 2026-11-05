@@ -2,7 +2,7 @@
 import os
 
 # Адреса, платформы и репозиторий берутся из окружения job'а (release.yml), значения по умолчанию - для локального запуска
-IMAGES = (os.environ.get("DOCKERHUB_IMAGE", "docker.io/geminishkv/cdxgen-distroless"),
+IMAGES = (os.environ.get("DOCKERHUB_IMAGE", "docker.io/geminishkvdev/cdxgen-distroless"),
           os.environ.get("GHCR_IMAGE", "ghcr.io/geminishkv/cdxgen-distroless"))
 REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "geminishkv/cdxgen-distroless")
 PLATFORMS = os.environ.get("PLATFORMS", "linux/amd64,linux/arm64")

@@ -18,7 +18,7 @@
 <div align="center">
 
 [![CI](https://github.com/geminishkv/cdxgen-distroless/actions/workflows/ci.yml/badge.svg)](https://github.com/geminishkv/cdxgen-distroless/actions/workflows/ci.yml)
-[![Docker Hub](https://img.shields.io/docker/v/geminishkv/cdxgen-distroless?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/geminishkv/cdxgen-distroless)
+[![Docker Hub](https://img.shields.io/docker/v/geminishkvdev/cdxgen-distroless?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/geminishkvdev/cdxgen-distroless)
 [![License](https://img.shields.io/github/license/geminishkv/cdxgen-distroless)](LICENSE)
 [![GitHub Package](https://img.shields.io/badge/GHCR-cdxgen--distroless-8b9aff)](https://github.com/geminishkv/cdxgen-distroless/pkgs/container/cdxgen-distroless)
 
@@ -56,7 +56,7 @@
 ## Получение образа
 
 ```bash
-docker pull geminishkv/cdxgen-distroless:12.9.0
+docker pull geminishkvdev/cdxgen-distroless:12.9.0
 docker pull ghcr.io/geminishkv/cdxgen-distroless:12.9.0
 ```
 
@@ -75,7 +75,7 @@ docker pull ghcr.io/geminishkv/cdxgen-distroless@sha256:<digest>
 ### Проект с lock-файлом
 
 ```bash
-IMAGE=geminishkv/cdxgen-distroless:12.9.0
+IMAGE=geminishkvdev/cdxgen-distroless:12.9.0
 
 docker create --name cdxgen-sbom --network none \
   -v "$PWD":/app:ro "$IMAGE" \
@@ -217,18 +217,18 @@ pre-commit run --all-files
 
 | Куда | Чем авторизуется job | Что завести в репозитории |
 | --- | --- | --- |
-| Docker Hub, образ | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | два секрета; токен Docker Hub с правами Read & Write |
+| Docker Hub, образ | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | два секрета; токен Docker Hub с правами Read & Write, если репозиторий на Docker Hub уже создан, иначе Read, Write, Delete: создать репозиторий при первой публикации может только он |
 | Docker Hub, описание | `DOCKERHUB_USERNAME`, `DOCKERHUB_DESCRIPTION_TOKEN` | ещё один секрет: отдельный токен с правами Read, Write, Delete |
 | GHCR | `github.token`, право `packages: write` | ничего |
 | Подпись cosign и аттестация | OIDC, права `id-token: write` и `attestations: write` | ничего |
 | GitHub Release | `github.token`, право `contents: write` | ничего |
 
-Менять описание Docker Hub разрешает только токену с правом Delete, поэтому токен отдельный: в job `publish`, где работают сторонние actions, он не попадает. В форке достаточно завести три секрета Docker Hub и заменить `geminishkv`: адреса образов в `env` в `release.yml`, метку `org.opencontainers.image.source` в `Dockerfile`, владельца в `.github/CODEOWNERS` и адрес репозитория в `SECURITY.md`.
+Менять описание Docker Hub разрешает только токену с правом Delete, поэтому токен отдельный: в job `publish`, где работают сторонние actions, он не попадает. В форке достаточно завести три секрета Docker Hub и заменить адреса: образов — в `env` в `release.yml`, репозитория — в метке `org.opencontainers.image.source` в `Dockerfile` и в `SECURITY.md`, владельца — в `.github/CODEOWNERS`. Пространство имён Docker Hub не обязано совпадать с владельцем на GitHub: здесь это `geminishkvdev` и `geminishkv`.
 
 ### Релиз
 
 ```bash
-git tag v12.9.0
+git tag -a v12.9.0 -m "cdxgen-distroless 12.9.0"
 git push origin v12.9.0
 ```
 

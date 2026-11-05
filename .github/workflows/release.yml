@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: false
 env:
   # Адреса публикации. В форке заменить на свои
-  DOCKERHUB_IMAGE: docker.io/geminishkv/cdxgen-distroless
+  DOCKERHUB_IMAGE: docker.io/geminishkvdev/cdxgen-distroless
   GHCR_IMAGE: ghcr.io/geminishkv/cdxgen-distroless
   PLATFORMS: linux/amd64,linux/arm64
 jobs:
