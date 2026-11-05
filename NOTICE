@@ -15,5 +15,7 @@ This repository builds a container image from third-party components, each under
 - Python official image docker.io/library/python (build stage only; interpreter files copied into the image)
   - Python Software Foundation License 2.0.
 - uv (https://github.com/astral-sh/uv) - Apache License 2.0 or MIT License, at your option.
+- zlib (https://zlib.net) - zlib License; the zlib1g package of Debian sid replaces the one of the base image
+  until the fix for CVE-2026-76844 reaches Debian trixie.
 
 The image is not an official build of any of the projects above.
