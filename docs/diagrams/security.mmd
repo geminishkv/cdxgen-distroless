@@ -1,0 +1,45 @@
+%%{init: {"flowchart": {"curve": "step"}}}%%
+flowchart TB
+    accTitle: cdxgen-distroless - пайплайн безопасности
+    accDescr: security.yml вызывается из ci.yml и release.yml или запускается вручную. Три сканера работают по репозиторию и образ не ждут. Job build собирает образ для linux/amd64 и передаёт его артефактом двум сканерам образа. Job gate выносит вердикт по четырём гейтящим слоям, job report собирает сводку всех пяти слоёв.
+
+    trigger(["workflow_call<br/>или ручной запуск"])
+    split@{ shape: f-circ }
+    subgraph repo_scan["По репозиторию"]
+        hadolint["hadolint<br/>Dockerfile"]
+        trivy_config["trivy-config<br/>misconfiguration"]
+        gitleaks["gitleaks<br/>секреты в истории"]
+    end
+    build["build<br/>buildx, linux/amd64"]
+    image_tar[/"Артефакт image:<br/>image.tar"/]
+    subgraph image_scan["По образу"]
+        trivy_image["trivy-image<br/>уязвимости ОС и npm"]
+        sbom["sbom, отчётный слой<br/>syft и cdxgen"]
+    end
+    join@{ shape: f-circ }
+    subgraph verdict["Вердикт и сводка"]
+        gate["gate<br/>4 гейтящих слоя"]
+        report["report<br/>все 5 слоёв"]
+    end
+    summary[/"Статус gate, сводка в<br/>GITHUB_STEP_SUMMARY,<br/>комментарий в PR"/]
+    done(["Прогон завершён"])
+
+    trigger --- split
+    split --> repo_scan
+    split --> build
+    build --> image_tar
+    image_tar --> image_scan
+    repo_scan --- join
+    image_scan --- join
+    join --> verdict
+    verdict --> summary
+    summary --> done
+
+    classDef process fill:#F2F2F2,stroke:#333333,color:#1A1A1A
+    classDef gate fill:#FBE9E7,stroke:#CC2200,color:#1A1A1A
+    classDef data fill:#FBF3DC,stroke:#D4A520,color:#1A1A1A
+    classDef point fill:none,stroke:none
+    class trigger,gitleaks,hadolint,trivy_config,build,trivy_image,sbom,report,done process
+    class gate gate
+    class image_tar,summary data
+    class split,join point

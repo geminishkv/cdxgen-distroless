@@ -1,0 +1,11 @@
+{
+  "look": "classic",
+  "theme": "default",
+  "fontFamily": "Arial, Helvetica, sans-serif",
+  "htmlLabels": false,
+  "handDrawnSeed": 1,
+  "flowchart": {
+    "useMaxWidth": false,
+    "wrappingWidth": 480
+  }
+}

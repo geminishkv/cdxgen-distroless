@@ -1,0 +1,52 @@
+%%{init: {"flowchart": {"curve": "step"}}}%%
+flowchart TB
+    accTitle: cdxgen-distroless - CI и релиз
+    accDescr: ci.yml на pull request и push в main параллельно запускает линтеры и пайплайн безопасности. release.yml на теге v с версией cdxgen или вручную сначала проходит тот же пайплайн безопасности и только после него собирает образ под две архитектуры, публикует его в Docker Hub и GHCR, подписывает cosign, выпускает аттестацию происхождения, выгружает SBOM образа из аттестаций реестра и на теге создаёт GitHub Release с заметками, SBOM и схемами во вложениях, после чего обновляет описание репозитория на Docker Hub.
+
+    change(["Pull request<br/>или push в main"])
+    subgraph ci["ci.yml"]
+        lint["lint<br/>pre-commit, unittest"]
+        ci_security[["security.yml"]]
+    end
+    checks(["Статусы проверок<br/>коммита и PR"])
+
+    tag(["Тег v*<br/>или ручной запуск"])
+    rel_security[["security.yml"]]
+    passed{"security<br/>успешен?"}
+    fork@{ shape: f-circ }
+    stopped(["Публикации нет"])
+    publish["publish<br/>buildx: amd64 и arm64<br/>provenance и SBOM"]
+    subgraph registries["Реестры"]
+        hub[/"Docker Hub<br/>версия и latest"/]
+        ghcr[/"GHCR<br/>версия и latest"/]
+    end
+    sign["cosign keyless<br/>для обоих реестров,<br/>аттестация для GHCR"]
+    sbom[/"SBOM образа, SPDX<br/>из аттестаций реестра"/]
+    notes["release-notes, на теге<br/>GitHub Release: заметки,<br/>SBOM и схемы"]
+    overview["dockerhub-description,<br/>на теге: описание<br/>в Docker Hub"]
+    done(["Релиз опубликован"])
+
+    change --> ci
+    ci --> checks
+    tag --> rel_security
+    rel_security --> passed
+    passed --- fork
+    fork -->|"Да"| publish
+    fork -->|"Нет"| stopped
+    publish --> registries
+    registries --> sign
+    sign --> sbom
+    sbom --> notes
+    notes --> overview
+    overview --> done
+
+    classDef process fill:#F2F2F2,stroke:#333333,color:#1A1A1A
+    classDef gate fill:#FBE9E7,stroke:#CC2200,color:#1A1A1A
+    classDef data fill:#FBF3DC,stroke:#D4A520,color:#1A1A1A
+    classDef external fill:#E8EEF5,stroke:#3B5B7D,color:#1A1A1A
+    classDef point fill:none,stroke:none
+    class change,lint,ci_security,checks,tag,rel_security,stopped,publish,sign,notes,overview,done process
+    class passed gate
+    class sbom data
+    class hub,ghcr external
+    class fork point
