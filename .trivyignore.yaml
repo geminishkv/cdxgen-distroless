@@ -1,0 +1,4 @@
+# Baseline Trivy для гейта: каждая запись — id, причина, ссылка на issue и срок (expired_at), после срока
+# находка возвращается в новые. Пусто = гейт считает всё. Формат: https://trivy.dev/docs/configuration/filtering/
+vulnerabilities: []
+misconfigurations: []
