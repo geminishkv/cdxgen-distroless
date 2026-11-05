@@ -1,0 +1,13 @@
+{
+  "name": "cdxgen-distroless",
+  "version": "0.0.0",
+  "private": true,
+  "description": "cdxgen on distroless: dependency manifest of the image",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@cyclonedx/cdxgen": "12.9.0"
+  },
+  "overrides": {
+    "body-parser": "2.4.0"
+  }
+}
