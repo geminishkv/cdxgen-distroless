@@ -1,0 +1,19 @@
+cdxgen-distroless
+Copyright (c) 2026 Elijah S Shmakov
+
+Licensed under the Apache License, Version 2.0 (the "License"); see LICENSE.
+
+This repository builds a container image from third-party components, each under its own license:
+
+- CycloneDX cdxgen (https://github.com/CycloneDX/cdxgen) - Apache License 2.0; installed as the npm package
+  @cyclonedx/cdxgen with its dependency tree (versions and hashes in package-lock.json, licenses in the
+  image SBOM published with every release).
+- Google Distroless base image gcr.io/distroless/nodejs24-debian13 (https://github.com/GoogleContainerTools/distroless)
+  - Apache License 2.0; it contains Node.js (MIT) and Debian packages under their respective licenses.
+- Node.js official image docker.io/library/node (build stage only) - MIT License for the image recipe,
+  Node.js license for the runtime.
+- Python official image docker.io/library/python (build stage only; interpreter files copied into the image)
+  - Python Software Foundation License 2.0.
+- uv (https://github.com/astral-sh/uv) - Apache License 2.0 or MIT License, at your option.
+
+The image is not an official build of any of the projects above.
