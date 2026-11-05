@@ -1,0 +1,8 @@
+# Линтер Python: только lint, без ruff-format. Тот же файл читают pre-commit (ruff-check) и job lint в CI.
+# Набор узкий - ошибки (E4/E7/E9), pyflakes (F), bugbear (B): баги, а не стиль.
+target-version = "py312"
+line-length = 100
+extend-exclude = ["node_modules", ".local"]
+
+[lint]
+select = ["E4", "E7", "E9", "F", "B"]

@@ -1,0 +1,55 @@
+# Локальный гейт = те же хуки и пины, что job lint в CI; rev: обновляет Dependabot (pre-commit, cooldown 7 дней).
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks            # allowlist - .gitleaks.toml; хук смотрит только staged, в job lint пропущен
+                                # (SKIP=gitleaks): историю в CI проверяет job gitleaks в security.yml
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.8
+    hooks:
+      - id: ruff-check          # только lint по ruff.toml, без ruff-format
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1-1
+    hooks:
+      - id: shellcheck
+        args: [--severity=warning]
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint          # корректность workflow; дополняет zizmor
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.30.1
+    hooks:
+      - id: zizmor              # безопасность workflow (пины, permissions, injection); без GH_TOKEN - offline-набор
+        args: [--persona=pedantic]
+  - repo: https://github.com/ComPWA/taplo-pre-commit
+    rev: v0.9.3
+    hooks:
+      - id: taplo-lint          # TOML (ruff.toml, .gitleaks.toml) - синтаксис; без онлайн-каталога схем
+        args: [--no-schema]
+      - id: taplo-format        # единое форматирование TOML; --check падает, если есть что менять
+        args: [--check]
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.23.3
+    hooks:
+      - id: markdownlint-cli2   # конфиг - .markdownlint.json
+  - repo: local
+    hooks:
+      - id: hadolint-install    # тот же бинарь, что в job hadolint: версия и sha256 - scripts/security/common.py
+        name: hadolint binary pinned by version and sha256 (scripts/security/install.py)
+        entry: python scripts/security/install.py hadolint
+        language: python
+        pass_filenames: false
+        types: [dockerfile]
+      - id: hadolint
+        name: hadolint on Dockerfile (scripts/security/hadolint.py)
+        entry: python scripts/security/hadolint.py
+        language: python
+        types: [dockerfile]
+      - id: check-links
+        name: relative links in *.md resolve (scripts/check_links.py)
+        entry: python scripts/check_links.py
+        language: python        # свой venv, не зависит от системного python
+        pass_filenames: false
+        files: \.md$
