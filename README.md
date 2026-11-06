@@ -48,7 +48,7 @@
 - Пользователь `65532:65532`, рабочий каталог `/app`, `HOME=/tmp`.
 - `ENTRYPOINT` — cdxgen: аргументы после имени образа уходят ему напрямую.
 - Базовые образы закреплены по digest в `ARG` в [Dockerfile](Dockerfile).
-- Поверх пакета базы лежит `zlib1g` 1.3.2-4 из Debian sid: в trixie исправления CVE-2026-76844 ещё нет. Наложение временное, это стадия `zlib` в `Dockerfile`.
+- Поверх пакета базы лежит `zlib1g` 1.3.2-4 из Debian sid: в trixie исправления CVE-2026-76844 и CVE-2026-85091 ещё нет. Наложение временное, это стадия `zlib` в `Dockerfile`. Trivy показывает обе CVE и на исправленной версии, пока исправления нет в trixie; исключения с причиной — в [.trivyignore.yaml](.trivyignore.yaml).
 - Версия образа равна версии cdxgen внутри, тег `latest` переставляет каждый прогон `release`.
 - `LICENSE` и `NOTICE` репозитория лежат в образе в `/licenses`.
 
@@ -246,7 +246,7 @@ python3 scripts/dockerhub_description.py render
 
 ### Обновления
 
-Actions закреплены по SHA; образы BuildKit, binfmt и генератора SBOM в workflow — по digest. Dependabot обновляет npm раз в неделю, GitHub Actions и хуки pre-commit раз в месяц, везде с cooldown 7 дней. Вручную обновляются базовые образы в `ARG` в `Dockerfile` (Dependabot разбирает только литеральные строки `FROM`, поэтому запись `docker` в `dependabot.yml` сейчас ничего не обновляет), три образа в workflow и версии сканеров в `scripts/security/common.py`. Стадию `zlib` в `Dockerfile` и запись CVE-2026-76844 в `.trivyignore.yaml` нужно убрать, когда исправление появится в базе distroless; срок записи — 2026-12-05.
+Actions закреплены по SHA; образы BuildKit, binfmt и генератора SBOM в workflow — по digest. Dependabot обновляет npm раз в неделю, GitHub Actions и хуки pre-commit раз в месяц, везде с cooldown 7 дней. Вручную обновляются базовые образы в `ARG` в `Dockerfile` (Dependabot разбирает только литеральные строки `FROM`, поэтому запись `docker` в `dependabot.yml` сейчас ничего не обновляет), три образа в workflow и версии сканеров в `scripts/security/common.py`. Стадию `zlib` в `Dockerfile` и записи CVE-2026-76844 и CVE-2026-85091 в `.trivyignore.yaml` нужно убрать, когда исправление появится в базе distroless; срок записей — 2026-12-05.
 
 Локальный гейт — [`.pre-commit-config.yaml`](.pre-commit-config.yaml). Job `lint` выполняет те же хуки, кроме gitleaks: историю проверяет отдельный job; zizmor в CI работает с токеном и включает онлайн-аудиты.
 
