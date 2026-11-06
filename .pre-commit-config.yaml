@@ -6,7 +6,7 @@ repos:
       - id: gitleaks            # allowlist - .gitleaks.toml; хук смотрит только staged, в job lint пропущен
                                 # (SKIP=gitleaks): историю в CI проверяет job gitleaks в security.yml
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.8
+    rev: v0.17.3
     hooks:
       - id: ruff-check          # только lint по ruff.toml, без ruff-format
   - repo: https://github.com/shellcheck-py/shellcheck-py
