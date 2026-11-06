@@ -143,7 +143,7 @@ docker rm cdxgen-sbom
 | образ с тегами версии и `latest` | Docker Hub, GHCR | индекс для `linux/amd64` и `linux/arm64` |
 | provenance и SBOM образа | реестр, рядом с образом | аттестации BuildKit: provenance `mode=max` и SBOM в формате SPDX от закреплённого генератора |
 | подпись cosign | реестр, рядом с образом | keyless, сертификат выписан на workflow `release.yml` |
-| аттестация происхождения GitHub | GHCR | `actions/attest-build-provenance` |
+| аттестация происхождения GitHub | GHCR | SLSA provenance от `actions/attest` |
 | GitHub Release | страница релизов репозитория | заметки: изменения из `CHANGELOG.md`, адреса образа по digest, состав, команды запуска и проверки; во вложениях SBOM опубликованных образов по платформам (SPDX) и три схемы |
 | описание на Docker Hub | страница репозитория в Docker Hub | обзор образа: теги и digest текущего выпуска, запуск, состав, проверка подписи, схемы |
 | `security-*` | артефакты прогона Actions | отчёты слоёв, `sbom-image.cdx.json` от syft и `sbom-cdxgen.cdx.json` от cdxgen |
