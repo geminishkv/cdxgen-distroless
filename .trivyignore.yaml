@@ -9,4 +9,11 @@ vulnerabilities:
       (стадия zlib в Dockerfile). Trivy помечает любую версию пакета, пока исправления нет в trixie:
       https://bugs.debian.org/1153063
     expired_at: 2026-12-05
+  - id: CVE-2026-85091
+    purls:
+      - "pkg:deb/debian/zlib1g@1.3.dfsg%2Breally1.3.2-4"
+    statement: >-
+      Ложное срабатывание по той же причине: CVE закрыта в zlib1g 1:1.3.dfsg+really1.3.2-4 тем же исправлением,
+      что и CVE-2026-76844 (changelog пакета): https://bugs.debian.org/1146895
+    expired_at: 2026-12-05
 misconfigurations: []

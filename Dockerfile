@@ -13,8 +13,8 @@ FROM ${PYTHON_IMAGE} AS python
 WORKDIR /usr/local/lib/python3.12
 RUN rm -rf ensurepip idlelib tkinter turtledemo pydoc_data test config-3.12-* site-packages/*
 
-# CVE-2026-76844: в trixie исправленного zlib ещё нет, поэтому поверх пакета базы кладётся zlib1g из Debian sid,
-# запись dpkg обновляется вместе с библиотекой. Убрать стадию, когда исправление появится в базе distroless.
+# CVE-2026-76844 и CVE-2026-85091: в trixie исправленного zlib ещё нет, поэтому поверх пакета базы кладётся zlib1g
+# из Debian sid, запись dpkg обновляется вместе с библиотекой. Убрать стадию, когда исправление появится в базе distroless.
 FROM ${PYTHON_IMAGE} AS zlib
 ARG TARGETARCH
 ADD --checksum=sha256:8506ce550a81ac14b047608e0df121037d9cbb10c3cc28446f68cf8c1d9d31ce \
