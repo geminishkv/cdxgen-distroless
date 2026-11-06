@@ -1,4 +1,12 @@
 # Baseline Trivy для гейта: каждая запись — id, причина, ссылка на issue и срок (expired_at), после срока
 # находка возвращается в новые. Пусто = гейт считает всё. Формат: https://trivy.dev/docs/configuration/filtering/
-vulnerabilities: []
+vulnerabilities:
+  - id: CVE-2026-76844
+    purls:
+      - "pkg:deb/debian/zlib1g@1.3.dfsg%2Breally1.3.2-4"
+    statement: >-
+      Ложное срабатывание: в образе zlib1g 1:1.3.dfsg+really1.3.2-4 из Debian sid, где CVE исправлена
+      (стадия zlib в Dockerfile). Trivy помечает любую версию пакета, пока исправления нет в trixie:
+      https://bugs.debian.org/1153063
+    expired_at: 2026-12-05
 misconfigurations: []

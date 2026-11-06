@@ -13,6 +13,20 @@ FROM ${PYTHON_IMAGE} AS python
 WORKDIR /usr/local/lib/python3.12
 RUN rm -rf ensurepip idlelib tkinter turtledemo pydoc_data test config-3.12-* site-packages/*
 
+# CVE-2026-76844: в trixie исправленного zlib ещё нет, поэтому поверх пакета базы кладётся zlib1g из Debian sid,
+# запись dpkg обновляется вместе с библиотекой. Убрать стадию, когда исправление появится в базе distroless.
+FROM ${PYTHON_IMAGE} AS zlib
+ARG TARGETARCH
+ADD --checksum=sha256:8506ce550a81ac14b047608e0df121037d9cbb10c3cc28446f68cf8c1d9d31ce \
+    https://deb.debian.org/debian/pool/main/z/zlib/zlib1g_1.3.dfsg+really1.3.2-4_amd64.deb /deb/zlib1g_amd64.deb
+ADD --checksum=sha256:aaf9e8cfc7d86771144c660d544806c886a5ae406f97bd50b62588a0718229ab \
+    https://deb.debian.org/debian/pool/main/z/zlib/zlib1g_1.3.dfsg+really1.3.2-4_arm64.deb /deb/zlib1g_arm64.deb
+RUN dpkg-deb -x "/deb/zlib1g_${TARGETARCH}.deb" /out \
+    && dpkg-deb -e "/deb/zlib1g_${TARGETARCH}.deb" /ctrl \
+    && install -D -m 0644 /ctrl/control /out/var/lib/dpkg/status.d/zlib1g \
+    && install -m 0644 /ctrl/md5sums /out/var/lib/dpkg/status.d/zlib1g.md5sums \
+    && ln -s libz.so.1.3.2 "$(dirname /out/usr/lib/*/libz.so.1)/libz.so.1.3.1"
+
 FROM ${BUILD_IMAGE} AS build
 WORKDIR /opt/cdxgen
 COPY package.json package-lock.json ./
@@ -23,6 +37,7 @@ FROM ${BASE_IMAGE}
 ARG CDXGEN_VERSION=unknown
 ARG REVISION=unknown
 ARG CREATED=unknown
+COPY --from=zlib /out/ /
 COPY --from=build /opt/cdxgen /opt/cdxgen
 COPY --from=uv /uv /usr/local/bin/uv
 COPY --from=python /usr/local/bin/python3.12 /usr/local/bin/python3.12

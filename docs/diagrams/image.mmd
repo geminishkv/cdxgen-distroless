@@ -1,11 +1,12 @@
 %%{init: {"flowchart": {"curve": "step"}}}%%
 flowchart TB
     accTitle: cdxgen-distroless - сборка образа
-    accDescr: Многостадийная сборка по Dockerfile. В контекст попадают только package.json, package-lock.json, LICENSE и NOTICE. Зависимости cdxgen ставятся в стадии build, бинарь uv и стандартная библиотека Python берутся из своих стадий, итоговая стадия собирает их на distroless nonroot. Базовые образы закреплены по digest, в итоговом образе нет оболочки и пакетных менеджеров.
+    accDescr: Многостадийная сборка по Dockerfile. В контекст попадают только package.json, package-lock.json, LICENSE и NOTICE. Зависимости cdxgen ставятся в стадии build, бинарь uv и стандартная библиотека Python берутся из своих стадий, исправленный zlib1g из Debian sid кладётся поверх пакета базы, итоговая стадия собирает их на distroless nonroot. Базовые образы закреплены по digest, в итоговом образе нет оболочки и пакетных менеджеров.
 
     start(["docker build"])
     context[/"Контекст сборки:<br/>package.json, lock-файл,<br/>LICENSE, NOTICE"/]
     subgraph stages["Стадии, базы по digest"]
+        zlib_stage["zlib<br/>zlib1g из Debian sid:<br/>исправление CVE"]
         uv_stage["uv<br/>ghcr.io/astral-sh/uv<br/>бинарь uv"]
         python_stage["python<br/>python:3.12-slim<br/>stdlib без pip и тестов"]
         build_stage["build<br/>node:24-alpine<br/>npm ci без dev, optional<br/>и install-скриптов"]
@@ -22,5 +23,5 @@ flowchart TB
 
     classDef process fill:#F2F2F2,stroke:#333333,color:#1A1A1A
     classDef data fill:#FBF3DC,stroke:#D4A520,color:#1A1A1A
-    class start,build_stage,uv_stage,python_stage,final,done process
+    class start,build_stage,uv_stage,python_stage,zlib_stage,final,done process
     class context,image data
